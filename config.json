@@ -1,0 +1,20 @@
+{
+  "privacy": {
+    "epsilon": 1.0,
+    "noise_multiplier": 1.0,
+    "max_grad_norm": 1.0,
+    "privacy_budget_limit": 8.0
+  },
+  "training": {
+    "learning_rate": 0.01,
+    "batch_size": 32,
+    "local_epochs": 5,
+    "rounds": 5
+  },
+  "system": {
+    "num_clients": 3,
+    "min_clients": 2,
+    "auto_stop_on_budget_exhausted": true
+  },
+  "last_updated": "2026-03-12T15:38:00.000000"
+}

@@ -1,0 +1,88 @@
+{
+  "healthcare_disease_prediction": {
+    "name": "Healthcare Disease Prediction",
+    "description": "Predict disease risk based on patient demographics and medical measurements",
+    "target_column": "disease_risk",
+    "task_type": "binary_classification",
+    "n_samples": 10000,
+    "n_features": 11,
+    "use_case": "Hospitals can collaboratively train disease prediction models without sharing patient records",
+    "privacy_level": "HIGH",
+    "columns": {
+      "age": "Patient age (18-90)",
+      "blood_pressure": "Systolic blood pressure",
+      "cholesterol": "Total cholesterol level",
+      "glucose": "Blood glucose level",
+      "bmi": "Body Mass Index",
+      "smoking": "Smoking status (0=No, 1=Yes)",
+      "exercise_hours": "Weekly exercise hours",
+      "alcohol_consumption": "Alcohol consumption level (0=None, 1=Low, 2=High)",
+      "family_history": "Family disease history (0=No, 1=Yes)",
+      "previous_conditions": "Previous medical conditions (0=None, 1=Minor, 2=Major)",
+      "disease_risk": "Disease risk prediction (0=Low, 1=High)"
+    }
+  },
+  "financial_fraud_detection": {
+    "name": "Financial Fraud Detection",
+    "description": "Detect fraudulent transactions based on transaction patterns and customer behavior",
+    "target_column": "is_fraud",
+    "task_type": "binary_classification",
+    "n_samples": 15000,
+    "n_features": 11,
+    "use_case": "Banks can collaboratively train fraud detection models without sharing customer transaction data",
+    "privacy_level": "CRITICAL",
+    "columns": {
+      "transaction_amount": "Transaction amount in local currency",
+      "hour_of_day": "Hour of transaction (0-23)",
+      "day_of_week": "Day of week (0-6)",
+      "customer_age": "Customer age",
+      "account_balance": "Account balance",
+      "transactions_last_day": "Number of transactions in last 24 hours",
+      "transactions_last_week": "Number of transactions in last 7 days",
+      "avg_transaction_amount": "Customer's average transaction amount",
+      "distance_from_home": "Distance from usual transaction location",
+      "is_mobile": "Mobile transaction (0=No, 1=Yes)",
+      "is_online": "Online transaction (0=No, 1=Yes)",
+      "is_fraud": "Fraud prediction (0=Legitimate, 1=Fraud)"
+    }
+  },
+  "iot_anomaly_detection": {
+    "name": "IoT Anomaly Detection",
+    "description": "Detect anomalies in IoT sensor data and device behavior",
+    "target_column": "is_anomaly",
+    "task_type": "binary_classification",
+    "n_samples": 20000,
+    "n_features": 12,
+    "use_case": "Smart cities can collaboratively train anomaly detection models for IoT infrastructure",
+    "privacy_level": "MEDIUM",
+    "columns": {
+      "temperature": "Temperature reading (\u00b0C)",
+      "humidity": "Humidity percentage",
+      "pressure": "Atmospheric pressure (hPa)",
+      "cpu_usage": "CPU usage percentage",
+      "memory_usage": "Memory usage percentage",
+      "network_latency": "Network latency (ms)",
+      "packet_loss": "Packet loss rate",
+      "device_type": "Type of IoT device",
+      "device_age_days": "Device age in days",
+      "battery_level": "Battery level percentage",
+      "vibration": "Vibration level",
+      "power_consumption": "Power consumption (W)",
+      "is_anomaly": "Anomaly prediction (0=Normal, 1=Anomaly)"
+    }
+  },
+  "general_classification": {
+    "name": "General Classification",
+    "description": "General purpose classification dataset for testing federated learning algorithms",
+    "target_column": "target",
+    "task_type": "binary_classification",
+    "n_samples": 8000,
+    "n_features": 20,
+    "use_case": "Research and development of federated learning algorithms",
+    "privacy_level": "LOW",
+    "columns": {
+      "feature_1-20": "Synthetic features for classification testing",
+      "target": "Binary classification target (0 or 1)"
+    }
+  }
+}

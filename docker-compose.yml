@@ -1,0 +1,161 @@
+version: '3.8'
+
+services:
+  # Federated Learning Server
+  server:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: fl-server
+    ports:
+      - "8080:8080"
+    command: python -m src.perfect_federated_platform --mode server --rounds 5 --min-clients 3
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    environment:
+      - PYTHONPATH=/app
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8080
+      - NUM_CLIENTS=3
+      - ROUNDS=5
+    networks:
+      - fl-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.connect(('localhost', 8080)); s.close()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # Client 1 - Bank A
+  client1:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: fl-client1
+    command: python -m src.perfect_federated_platform --mode client --client-id 1 --server-host server --server-port 8080
+    depends_on:
+      server:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    environment:
+      - PYTHONPATH=/app
+      - CLIENT_ID=1
+      - SERVER_HOST=server
+      - SERVER_PORT=8080
+      - PRIVACY_ENABLED=true
+      - NOISE_MULTIPLIER=1.0
+    networks:
+      - fl-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # Client 2 - Bank B
+  client2:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: fl-client2
+    command: python -m src.perfect_federated_platform --mode client --client-id 2 --server-host server --server-port 8080
+    depends_on:
+      server:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    environment:
+      - PYTHONPATH=/app
+      - CLIENT_ID=2
+      - SERVER_HOST=server
+      - SERVER_PORT=8080
+      - PRIVACY_ENABLED=true
+      - NOISE_MULTIPLIER=1.5
+    networks:
+      - fl-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # Client 3 - Bank C (with Higher Privacy)
+  client3:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: fl-client3
+    command: python -m src.perfect_federated_platform --mode client --client-id 3 --server-host server --server-port 8080
+    depends_on:
+      server:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    environment:
+      - PYTHONPATH=/app
+      - CLIENT_ID=3
+      - SERVER_HOST=server
+      - SERVER_PORT=8080
+      - PRIVACY_ENABLED=true
+      - NOISE_MULTIPLIER=2.0
+    networks:
+      - fl-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # Enhanced Streamlit Dashboard
+  dashboard:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: fl-dashboard
+    ports:
+      - "8501:8501"
+    command: streamlit run src/enhanced_dashboard_v3.py --server.port=8501 --server.address=0.0.0.0 --server.headless=true --server.enableCORS=false
+    depends_on:
+      server:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+      - ./src:/app/src
+    environment:
+      - PYTHONPATH=/app
+      - DASHBOARD_REFRESH_INTERVAL=5
+    networks:
+      - fl-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+networks:
+  fl-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  logs:
+    driver: local
+  data:
+    driver: local
