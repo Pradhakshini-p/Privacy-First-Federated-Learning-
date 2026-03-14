@@ -347,16 +347,8 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file for
 
 - **Issues**: [GitHub Issues](https://github.com/yourusername/privacy-first-federated-learning/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/yourusername/privacy-first-federated-learning/discussions)
-- **Email**: your.email@example.com
+- **Email**: pradhakshini68@example.com
 
-## 🏆 Awards & Recognition
-
-- 🥇 **TCS Project Expo Winner** - Innovation in AI Privacy
-- 🏆 **Best Security Implementation** - Enterprise Privacy Awards
-- 🌟 **Featured Project** - Federated Learning Community
-- 📊 **Research Citation** - Academic papers reference this work
-
----
 
 **🚀 Transform collaborative AI with privacy-first federated learning!**
 
