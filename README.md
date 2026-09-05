@@ -158,3 +158,8 @@ MIT — see [LICENSE](LICENSE).
 - [Flower](https://flower.dev/) — Federated learning framework
 - [Opacus](https://opacus.ai/) — Differential privacy for PyTorch
 - [Pima Indians Diabetes Dataset](https://www.kaggle.com/datasets/uciml/pima-indians-diabetes-database)
+
+## Links
+
+- **Repository**: [github.com/Pradhakshini-p/Privacy-First-Federated-Learning-](https://github.com/Pradhakshini-p/Privacy-First-Federated-Learning-)
+- **Issues**: [GitHub Issues](https://github.com/Pradhakshini-p/Privacy-First-Federated-Learning-/issues)
