@@ -23,6 +23,94 @@ import logging
 from typing import Dict, List, Optional, Tuple
 import hashlib
 
+# Configure Streamlit page - MUST be the first Streamlit command
+st.set_page_config(
+    page_title="Advanced Federated Learning Dashboard",
+    page_icon="🔐",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Add caching for static data
+@st.cache_data(ttl=3600)  # Cache for 1 hour
+def get_cached_dataset_info():
+    """Get cached dataset information to prevent flickering"""
+    datasets = {
+        "EMNIST": {
+            "name": "EMNIST (Extended MNIST)",
+            "description": "Handwritten characters and digits",
+            "classes": 62,
+            "samples": 814558,
+            "image_size": "28x28",
+            "difficulty": "Medium",
+            "use_case": "Character recognition",
+            "icon": "✍️"
+        },
+        "CIFAR-10": {
+            "name": "CIFAR-10",
+            "description": "Natural images (10 classes)",
+            "classes": 10,
+            "samples": 60000,
+            "image_size": "32x32",
+            "difficulty": "Easy",
+            "use_case": "Object recognition",
+            "icon": "🖼️"
+        },
+        "Fashion-MNIST": {
+            "name": "Fashion-MNIST",
+            "description": "Fashion items and clothing",
+            "classes": 10,
+            "samples": 70000,
+            "image_size": "28x28",
+            "difficulty": "Easy",
+            "use_case": "Fashion classification",
+            "icon": "👔"
+        },
+        "Medical-MNIST": {
+            "name": "Medical-MNIST",
+            "description": "Medical images and diagnostics",
+            "classes": 6,
+            "samples": 58954,
+            "image_size": "64x64",
+            "difficulty": "Hard",
+            "use_case": "Medical diagnosis",
+            "icon": "🏥"
+        },
+        "Banking-Fraud": {
+            "name": "Banking Fraud Detection",
+            "description": "Transaction fraud patterns",
+            "classes": 2,
+            "samples": 284807,
+            "image_size": "Tabular",
+            "difficulty": "Medium",
+            "use_case": "Fraud detection",
+            "icon": "🏦"
+        }
+    }
+    return datasets
+
+@st.cache_data(ttl=3600)
+def get_cached_accuracy_ranges():
+    """Get cached accuracy ranges to prevent flickering"""
+    return {
+        "EMNIST": (0.45, 0.92),
+        "CIFAR-10": (0.55, 0.95),
+        "Fashion-MNIST": (0.60, 0.94),
+        "Medical-MNIST": (0.40, 0.88),
+        "Banking-Fraud": (0.70, 0.98)
+    }
+
+@st.cache_data(ttl=3600)
+def get_cached_privacy_challenges():
+    """Get cached privacy challenges to prevent flickering"""
+    return {
+        "EMNIST": "Medium - Character recognition needs careful privacy",
+        "CIFAR-10": "Low - Natural images are less privacy-sensitive",
+        "Fashion-MNIST": "Low - Fashion data has low privacy risk",
+        "Medical-MNIST": "High - Medical data requires strong privacy",
+        "Banking-Fraud": "High - Financial data needs maximum privacy"
+    }
+
 # Add src to path to import our modules
 sys.path.append(str(Path(__file__).parent))
 
@@ -78,6 +166,17 @@ class AdvancedFederatedDashboard:
             st.session_state.training_stopped = False
         if 'view_raw_gradients' not in st.session_state:
             st.session_state.view_raw_gradients = False
+        # Initialize accuracy history for sparkline
+        if 'accuracy_history' not in st.session_state:
+            st.session_state.accuracy_history = []
+        # Initialize demo mode settings
+        if 'demo_mode' not in st.session_state:
+            st.session_state.demo_mode = False
+        if 'demo_counter' not in st.session_state:
+            st.session_state.demo_counter = 0
+        # Initialize dataset selection
+        if 'selected_dataset' not in st.session_state:
+            st.session_state.selected_dataset = "EMNIST"
     
     def load_config(self):
         """Load configuration from JSON file"""
@@ -103,8 +202,85 @@ class AdvancedFederatedDashboard:
         except Exception as e:
             logger.error(f"Could not save config: {e}")
     
+    def get_privacy_color(self, privacy_loss: float) -> str:
+        """Get color based on privacy spent"""
+        if privacy_loss <= 2.0:
+            return "🟢"  # Green - Safe
+        elif privacy_loss <= 5.0:
+            return "🟡"  # Yellow - Caution
+        elif privacy_loss <= 8.0:
+            return "🟠"  # Orange - Warning
+        else:
+            return "🔴"  # Red - Critical
+    
+    def create_sparkline(self, values: list, height: int = 50) -> str:
+        """Create a simple sparkline using Unicode characters"""
+        if not values or len(values) < 2:
+            return "▁"
+        
+        # Normalize values to 0-8 range for Unicode block characters
+        min_val, max_val = min(values), max(values)
+        if max_val == min_val:
+            normalized = [4] * len(values)
+        else:
+            normalized = [int(8 * (v - min_val) / (max_val - min_val)) for v in values]
+        
+        # Unicode block characters from empty to full
+        blocks = [' ', '▁', '▂', '▃', '▄', '▅', '▆', '▇', '█']
+        sparkline = ''.join(blocks[min(v, 8)] for v in normalized)
+        return sparkline
+    
+    def get_dataset_info(self) -> Dict:
+        """Get information about available datasets (cached)"""
+        return get_cached_dataset_info()
+    
+    def get_demo_data(self) -> Dict:
+        """Generate realistic demo data for presentations"""
+        st.session_state.demo_counter += 1
+        
+        # Get dataset-specific characteristics
+        datasets = self.get_dataset_info()
+        dataset_info = datasets.get(st.session_state.selected_dataset, datasets["EMNIST"])
+        
+        # Simulate training progression
+        round_progress = min(st.session_state.demo_counter / 10, 1.0)  # 10 rounds to full progress
+        
+        # Dataset-specific accuracy ranges (cached)
+        accuracy_ranges = get_cached_accuracy_ranges()
+        
+        min_acc, max_acc = accuracy_ranges.get(st.session_state.selected_dataset, (0.5, 0.9))
+        base_accuracy = min_acc + ((max_acc - min_acc) * round_progress)
+        accuracy_noise = np.random.normal(0, 0.02)  # Small random variations
+        accuracy = max(min_acc - 0.05, min(max_acc + 0.05, base_accuracy + accuracy_noise))
+        
+        # Privacy budget that increases steadily
+        privacy_loss = min(8.5, 0.5 + (st.session_state.demo_counter * 0.3))
+        
+        # Client count that shows realistic connection patterns
+        if st.session_state.demo_counter <= 2:
+            clients = 0  # Starting up
+        elif st.session_state.demo_counter <= 4:
+            clients = np.random.choice([1, 2])  # Connecting
+        else:
+            clients = np.random.choice([3, 4, 5])  # Fully connected with some variance
+        
+        return {
+            'accuracy': accuracy,
+            'privacy_loss': privacy_loss,
+            'clients': clients,
+            'round': min(st.session_state.demo_counter, 10),
+            'demo_mode': True,
+            'dataset': st.session_state.selected_dataset,
+            'dataset_info': dataset_info
+        }
+    
     def load_live_metrics(self) -> Dict:
         """Load live metrics from FL server"""
+        
+        # Use demo mode if enabled
+        if st.session_state.demo_mode:
+            return self.get_demo_data()
+        
         try:
             # Try multiple possible CSV files
             metrics_files = [
@@ -683,26 +859,69 @@ class AdvancedFederatedDashboard:
         privacy_loss = live_data.get('privacy_loss', live_data.get('epsilon_spent', 0.0))
         clients = live_data.get('clients', 0)
         round_num = live_data.get('round', 0)
+        dataset_name = live_data.get('dataset', st.session_state.selected_dataset)
+        dataset_info = live_data.get('dataset_info', self.get_dataset_info()[dataset_name])
         
         with col1:
+            # Update accuracy history for sparkline
+            if accuracy > 0:  # Only add valid accuracy values
+                st.session_state.accuracy_history.append(accuracy)
+                # Keep only last 10 values for sparkline
+                if len(st.session_state.accuracy_history) > 10:
+                    st.session_state.accuracy_history = st.session_state.accuracy_history[-10:]
+            
+            # Create sparkline
+            sparkline = self.create_sparkline(st.session_state.accuracy_history)
+            
+            # Get dataset-specific accuracy ranges (cached)
+            accuracy_ranges = get_cached_accuracy_ranges()
+            min_acc, max_acc = accuracy_ranges.get(dataset_name, (0.5, 0.9))
+            
             st.metric(
-                "Global Accuracy",
-                f"{accuracy:.2%}",
-                delta=f"{accuracy - 0.5:.2%}" if accuracy > 0.5 else f"{accuracy - 0.5:.2%}"
+                f"Global Accuracy {dataset_info['icon']}",
+                f"{accuracy:.2%} {sparkline}",
+                delta=f"{accuracy - 0.5:.2%}" if accuracy > 0.5 else f"{accuracy - 0.5:.2%}",
+                help=f"Dataset: {dataset_info['name']} | Range: {min_acc:.1%} - {max_acc:.1%}"
             )
         
         with col2:
+            privacy_color = self.get_privacy_color(privacy_loss)
+            
+            # Determine delta color based on privacy level
+            if privacy_loss <= 2.0:
+                delta_color = "normal"  # Green
+            elif privacy_loss <= 5.0:
+                delta_color = "inverse"  # Yellow/Orange
+            else:
+                delta_color = "inverse"  # Red
+            
             st.metric(
-                "Privacy Spent (ε)",
+                f"Privacy Spent (ε) {privacy_color}",
                 f"{privacy_loss:.2f}",
-                delta=f"+{privacy_loss:.2f}"
+                delta=f"+{privacy_loss:.2f}",
+                delta_color=delta_color
             )
         
         with col3:
+            # Show client status with better visual feedback
+            if clients >= NUM_CLIENTS:
+                client_delta = f"+{clients - NUM_CLIENTS}"
+                delta_color = "normal"
+                status_emoji = "✅"
+            elif clients > 0:
+                client_delta = f"{clients - NUM_CLIENTS}"
+                delta_color = "inverse"
+                status_emoji = "⚠️"
+            else:
+                client_delta = f"{clients - NUM_CLIENTS}"
+                delta_color = "inverse"
+                status_emoji = "🔴"
+            
             st.metric(
-                "Active Clients",
+                f"Active Clients {status_emoji}",
                 clients,
-                delta=f"+{clients - NUM_CLIENTS}" if clients >= NUM_CLIENTS else f"{clients - NUM_CLIENTS}"
+                delta=client_delta,
+                delta_color=delta_color
             )
         
         with col4:
@@ -712,8 +931,19 @@ class AdvancedFederatedDashboard:
                 delta=f"+{round_num}"
             )
         
+        # Demo mode indicator
+        if st.session_state.demo_mode:
+            st.success("🎬 **Demo Mode Active** - Showing simulated training progression")
+        
         # Training status
-        if st.session_state.training_stopped:
+        if st.session_state.demo_mode:
+            if privacy_loss > 8.0:
+                st.error("🛑 Demo: Privacy budget exhausted - Training stopped")
+            elif privacy_loss > 6.0:
+                st.warning("⚠️ Demo: Approaching privacy budget limit")
+            else:
+                st.success("✅ Demo: Training running normally")
+        elif st.session_state.training_stopped:
             st.error("🛑 Training stopped - Privacy budget exhausted")
         elif privacy_loss > st.session_state.privacy_config['privacy_budget_limit'] * 0.8:
             st.warning("⚠️ Approaching privacy budget limit")
@@ -747,14 +977,44 @@ class AdvancedFederatedDashboard:
     
     def run(self):
         """Main dashboard application"""
-        st.set_page_config(
-            page_title="Advanced Federated Learning Dashboard",
-            page_icon="🔐",
-            layout="wide",
-            initial_sidebar_state="expanded"
-        )
         
         st.title("🔐 Advanced Privacy-First Federated Learning Dashboard")
+        
+        # Demo mode checkbox in sidebar
+        st.session_state.demo_mode = st.sidebar.checkbox(
+            "🎬 Demo Mode", 
+            value=st.session_state.demo_mode,
+            help="Simulate realistic values for presentations"
+        )
+        
+        # Dataset selection in sidebar
+        st.sidebar.markdown("### 📊 Dataset Selection")
+        datasets = self.get_dataset_info()
+        dataset_options = {f"{info['icon']} {info['name']}": key for key, info in datasets.items()}
+        
+        selected_display = st.sidebar.selectbox(
+            "Choose Dataset:",
+            options=list(dataset_options.keys()),
+            index=list(dataset_options.values()).index(st.session_state.selected_dataset),
+            help="Select the dataset for federated learning"
+        )
+        
+        # Update selected dataset
+        st.session_state.selected_dataset = dataset_options[selected_display]
+        
+        # Show dataset info
+        dataset_info = datasets[st.session_state.selected_dataset]
+        with st.sidebar.expander(f"📋 Dataset Details", expanded=False):
+            st.markdown(f"**{dataset_info['icon']} {dataset_info['name']}**")
+            st.write(f"📝 {dataset_info['description']}")
+            st.write(f"🏷️ Classes: {dataset_info['classes']}")
+            st.write(f"📊 Samples: {dataset_info['samples']:,}")
+            st.write(f"🖼️ Size: {dataset_info['image_size']}")
+            st.write(f"🎯 Difficulty: {dataset_info['difficulty']}")
+            st.write(f"💼 Use Case: {dataset_info['use_case']}")
+        
+        st.sidebar.markdown("---")
+        
         st.markdown("---")
         
         # Auto-refresh logic
@@ -765,12 +1025,13 @@ class AdvancedFederatedDashboard:
                 st.rerun()
         
         # Create tabs
-        tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
             "📊 Training Metrics", 
             "🎛️ Privacy Controls",
             "🔐 Secure Aggregation",
             "📊 Privacy Leakage",
-            "🔍 Debugging"
+            "🔍 Debugging",
+            "📈 Dataset Analysis"
         ])
         
         # Load data
@@ -794,6 +1055,9 @@ class AdvancedFederatedDashboard:
         with tab5:
             self.create_federated_debugging()
         
+        with tab6:
+            self.create_dataset_analysis_tab()
+        
         # Live feed at the bottom
         st.markdown("---")
         self.create_live_feed()
@@ -803,6 +1067,132 @@ class AdvancedFederatedDashboard:
         st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | "
                   f"Auto-refresh: {'ON' if st.session_state.auto_refresh_enabled else 'OFF'} | "
                   f"Interval: {self.refresh_interval}s")
+
+    def create_dataset_analysis_tab(self):
+        """Create dataset analysis and comparison tab (optimized to prevent flickering)"""
+        st.header("📈 Dataset Analysis & Comparison")
+        
+        # Use cached data to prevent flickering
+        datasets = get_cached_dataset_info()
+        accuracy_ranges = get_cached_accuracy_ranges()
+        privacy_challenges = get_cached_privacy_challenges()
+        
+        current_dataset = st.session_state.selected_dataset
+        current_info = datasets[current_dataset]
+        
+        # Current dataset overview
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            st.subheader(f"📊 Current Dataset: {current_info['icon']} {current_info['name']}")
+            st.markdown(f"**Description:** {current_info['description']}")
+            st.markdown(f"**Use Case:** {current_info['use_case']}")
+            
+            # Dataset characteristics
+            char_cols = st.columns(4)
+            with char_cols[0]:
+                st.metric("Classes", current_info['classes'])
+            with char_cols[1]:
+                st.metric("Samples", f"{current_info['samples']:,}")
+            with char_cols[2]:
+                st.metric("Image Size", current_info['image_size'])
+            with char_cols[3]:
+                st.metric("Difficulty", current_info['difficulty'])
+        
+        with col2:
+            # Performance expectations (using cached data)
+            min_acc, max_acc = accuracy_ranges.get(current_dataset, (0.5, 0.9))
+            
+            st.subheader("🎯 Performance Expectations")
+            st.write(f"**Accuracy Range:**")
+            st.progress((min_acc + max_acc) / 2)
+            st.write(f"Min: {min_acc:.1%}")
+            st.write(f"Max: {max_acc:.1%}")
+            st.write(f"**Privacy Challenge:** {privacy_challenges.get(current_dataset, 'Medium')}")
+        
+        st.markdown("---")
+        
+        # Dataset comparison table (cached to prevent flickering)
+        st.subheader("🔍 Dataset Comparison")
+        
+        # Create comparison data once (cached approach)
+        @st.cache_data(ttl=3600)
+        def get_comparison_data():
+            comparison_data = []
+            for name, info in datasets.items():
+                min_acc, max_acc = accuracy_ranges.get(name, (0.5, 0.9))
+                comparison_data.append({
+                    "Dataset": f"{info['icon']} {info['name']}",
+                    "Classes": info['classes'],
+                    "Samples": f"{info['samples']:,}",
+                    "Difficulty": info['difficulty'],
+                    "Min Accuracy": f"{min_acc:.1%}",
+                    "Max Accuracy": f"{max_acc:.1%}",
+                    "Privacy Challenge": privacy_challenges.get(name, "Medium"),
+                    "Best For": info['use_case']
+                })
+            return pd.DataFrame(comparison_data)
+        
+        df_comparison = get_comparison_data()
+        st.dataframe(df_comparison, use_container_width=True)
+        
+        # Visualization (using cached data to prevent flickering)
+        st.subheader("📊 Dataset Characteristics Visualization")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Accuracy ranges comparison (cached)
+            fig = go.Figure()
+            
+            for name, info in datasets.items():
+                min_acc, max_acc = accuracy_ranges.get(name, (0.5, 0.9))
+                fig.add_trace(go.Bar(
+                    name=info['name'],
+                    x=['Min Accuracy', 'Max Accuracy'],
+                    y=[min_acc, max_acc],
+                    text=[f"{min_acc:.1%}", f"{max_acc:.1%}"],
+                    textposition='auto',
+                ))
+            
+            fig.update_layout(
+                title="Accuracy Ranges by Dataset",
+                xaxis_title="Metric",
+                yaxis_title="Accuracy",
+                yaxis_tickformat='.1%',
+                barmode='group'
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            # Dataset complexity scatter plot (cached)
+            class_counts = [info['classes'] for info in datasets.values()]
+            sample_counts = [info['samples'] for info in datasets.values()]
+            names = [info['name'] for info in datasets.values()]
+            icons = [info['icon'] for info in datasets.values()]
+            
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=class_counts,
+                y=sample_counts,
+                mode='markers+text',
+                text=[f"{icon} {name}" for icon, name in zip(icons, names)],
+                textposition="top center",
+                marker=dict(size=12),
+                name="Datasets"
+            ))
+            
+            fig.update_layout(
+                title="Dataset Complexity (Classes vs Samples)",
+                xaxis_title="Number of Classes",
+                yaxis_title="Number of Samples"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+    
+    def get_privacy_challenge(self, dataset_name: str) -> str:
+        """Get privacy challenge level for dataset (cached)"""
+        privacy_challenges = get_cached_privacy_challenges()
+        return privacy_challenges.get(dataset_name, "Medium")
 
 def main():
     """Main entry point"""

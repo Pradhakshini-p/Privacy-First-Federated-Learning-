@@ -1,0 +1,39 @@
+# Privacy-First Federated Learning Backend Requirements
+# Core ML and Privacy Libraries
+torch>=1.12.0
+torchvision>=0.13.0
+opacus>=0.14.0
+
+# Federated Learning
+flwr>=1.4.0
+
+# FastAPI and Web Services
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+websockets>=12.0
+pydantic>=2.0.0
+
+# Data Processing
+pandas>=1.5.0
+numpy>=1.24.0
+scikit-learn>=1.3.0
+
+# Cryptography and Security
+cryptography>=41.0.0
+
+# Monitoring and Logging
+psutil>=5.9.0
+requests>=2.31.0
+
+# Dashboard (if needed)
+streamlit>=1.28.0
+plotly>=5.17.0
+
+# Development and Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+
+# Optional: For enhanced features
+# matplotlib>=3.7.0
+# seaborn>=0.12.0
+# jupyter>=1.0.0

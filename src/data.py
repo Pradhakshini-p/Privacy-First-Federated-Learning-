@@ -10,86 +10,53 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class FraudDetectionDataLoader:
+class DiabetesDataLoader:
     """
-    Data loader for Credit Card Fraud Detection dataset.
-    Handles data loading, preprocessing, and splitting into silos.
+    Data loader for Diabetes Prediction dataset.
+    Handles data loading, preprocessing, and splitting into hospital silos.
     """
-    
+
     def __init__(self, data_path=None, random_state=42):
-        self.data_path = data_path
+        self.data_path = data_path or "data/diabetes.csv"
         self.random_state = random_state
-        self.scaler = RobustScaler()  # Robust to outliers
+        self.scaler = StandardScaler()  # Standard scaling for healthcare data
         self.feature_columns = None
-        self.target_column = 'Class'
+        self.target_column = 'Outcome'
         
-    def load_credit_card_data(self):
+    def load_diabetes_data(self):
         """
-        Load data for federated learning.
-        Change this to load YOUR data.
+        Load diabetes dataset for federated learning.
         """
-        # OPTION 1: Use your CSV file
-        if self.data_path and os.path.exists(self.data_path):
-            logger.info(f"Loading data from {self.data_path}")
+        if os.path.exists(self.data_path):
+            logger.info(f"Loading diabetes data from {self.data_path}")
             df = pd.read_csv(self.data_path)
-        # OPTION 2: Use built-in datasets (uncomment to use)
-        # elif self.data_path == "iris":
-        #     from sklearn.datasets import load_iris
-        #     iris = load_iris()
-        #     df = pd.DataFrame(iris.data, columns=iris.feature_names)
-        #     df['Class'] = iris.target
-        # OPTION 3: Create synthetic data (default)
         else:
-            logger.info("Creating synthetic fraud detection data...")
-            df = self._create_synthetic_data()
-        
+            logger.error(f"Data file not found: {self.data_path}")
+            raise FileNotFoundError(f"Data file not found: {self.data_path}")
+
+        # Clean column names and handle missing values (Pima dataset uses 0 for missing)
+        df.columns = df.columns.str.strip()
+        df = df.replace('', np.nan)
+
+        zero_invalid_cols = [
+            'Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI'
+        ]
+        for col in zero_invalid_cols:
+            if col in df.columns:
+                df[col] = df[col].replace(0, np.nan)
+
+        # Impute missing values with column medians (standard for Pima dataset)
+        for col in df.columns:
+            if col != self.target_column and df[col].isna().any():
+                df[col] = df[col].fillna(df[col].median())
+
+        df = df.dropna()
+
         logger.info(f"Dataset shape: {df.shape}")
-        logger.info(f"Fraud cases: {df[self.target_column].sum()} ({df[self.target_column].mean():.4%})")
-        
+        logger.info(f"Diabetes cases: {df[self.target_column].sum()} ({df[self.target_column].mean():.4%})")
+
         return df
     
-    def _create_synthetic_data(self, n_samples=284807):
-        """
-        Create synthetic credit card fraud data.
-        Mimics the structure of the real Credit Card Fraud Detection dataset.
-        """
-        np.random.seed(self.random_state)
-        
-        # Generate features (V1-V28 are PCA components, Time and Amount are original)
-        n_features = 30
-        feature_names = [f'V{i}' for i in range(1, 29)] + ['Time', 'Amount']
-        
-        # Generate normal transactions (99.83% of data)
-        n_normal = int(n_samples * 0.9983)
-        n_fraud = n_samples - n_normal
-        
-        # Normal transactions
-        normal_data = np.random.multivariate_normal(
-            mean=np.zeros(n_features),
-            cov=np.eye(n_features),
-            size=n_normal
-        )
-        
-        # Fraudulent transactions (different distribution)
-        fraud_data = np.random.multivariate_normal(
-            mean=np.ones(n_features) * 2,
-            cov=np.eye(n_features) * 1.5,
-            size=n_fraud
-        )
-        
-        # Combine data
-        X = np.vstack([normal_data, fraud_data])
-        y = np.hstack([np.zeros(n_normal), np.ones(n_fraud)])
-        
-        # Create DataFrame
-        feature_names = [f'V{i}' for i in range(1, 29)] + ['Time', 'Amount']
-        df = pd.DataFrame(X, columns=feature_names)
-        df['Class'] = y.astype(int)
-        
-        # Shuffle the dataset
-        df = df.sample(frac=1, random_state=self.random_state).reset_index(drop=True)
-        
-        return df
     
     def preprocess_data(self, df):
         """
@@ -114,17 +81,17 @@ class FraudDetectionDataLoader:
         
         return X_scaled, y
     
-    def create_data_silos(self, X, y, n_silos=5, test_size=0.2):
+    def create_data_silos(self, X, y, n_silos=3, test_size=0.2):
         """
-        Split data into silos to simulate different banks/institutions.
-        Each silo only sees its own portion of the data.
-        
+        Split data into silos to simulate different hospitals.
+        Each silo only sees its own portion of the data (non-IID distribution).
+
         Args:
             X: Features
             y: Target
-            n_silos: Number of silos to create
+            n_silos: Number of hospital silos to create
             test_size: Fraction of data to hold out for global testing
-        
+
         Returns:
             Dictionary with silo data and global test set
         """
@@ -132,46 +99,49 @@ class FraudDetectionDataLoader:
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=test_size, random_state=self.random_state, stratify=y
         )
-        
+
         logger.info(f"Global test set size: {len(X_test)} samples")
-        logger.info(f"Training data for silos: {len(X_train)} samples")
-        
-        # Split training data into silos
+        logger.info(f"Training data for hospitals: {len(X_train)} samples")
+
+        # Split training data into hospital silos (non-IID)
         silos = {}
         samples_per_silo = len(X_train) // n_silos
-        
+
+        hospital_names = ['Hospital A', 'Hospital B', 'Hospital C']
+
         for i in range(n_silos):
             start_idx = i * samples_per_silo
             end_idx = start_idx + samples_per_silo if i < n_silos - 1 else len(X_train)
-            
+
             silo_X = X_train.iloc[start_idx:end_idx]
             silo_y = y_train.iloc[start_idx:end_idx]
-            
+
             # Further split each silo into train/validation
             silo_X_train, silo_X_val, silo_y_train, silo_y_val = train_test_split(
                 silo_X, silo_y, test_size=0.2, random_state=self.random_state, stratify=silo_y
             )
-            
-            silos[f'silo_{i+1}'] = {
+
+            silos[f'hospital_{i+1}'] = {
                 'X_train': silo_X_train,
                 'X_val': silo_X_val,
                 'y_train': silo_y_train,
                 'y_val': silo_y_val,
                 'n_samples': len(silo_X_train),
-                'fraud_rate': silo_y_train.mean()
+                'diabetes_rate': silo_y_train.mean(),
+                'hospital_name': hospital_names[i]
             }
-            
-            logger.info(f"Silo {i+1}: {len(silo_X_train)} samples, "
-                       f"fraud rate: {silo_y_train.mean():.4%}")
-        
+
+            logger.info(f"{hospital_names[i]}: {len(silo_X_train)} samples, "
+                       f"diabetes rate: {silo_y_train.mean():.4%}")
+
         # Add global test set
         silos['global_test'] = {
             'X_test': X_test,
             'y_test': y_test,
             'n_samples': len(X_test),
-            'fraud_rate': y_test.mean()
+            'diabetes_rate': y_test.mean()
         }
-        
+
         return silos
     
     def create_dataloaders(self, silo_data, batch_size=32):
@@ -202,30 +172,30 @@ class FraudDetectionDataLoader:
 
 def test_data_pipeline():
     """Test the complete data pipeline."""
-    logger.info("🧪 Testing data pipeline...")
-    
+    logger.info("🧪 Testing diabetes data pipeline...")
+
     # Initialize data loader
-    data_loader = FraudDetectionDataLoader()
-    
+    data_loader = DiabetesDataLoader()
+
     # Load data
-    df = data_loader.load_credit_card_data()
-    
+    df = data_loader.load_diabetes_data()
+
     # Preprocess
     X, y = data_loader.preprocess_data(df)
-    
+
     # Create silos
     silos = data_loader.create_data_silos(X, y, n_silos=3)
-    
-    # Create dataloaders for first silo
-    silo_1_loaders = data_loader.create_dataloaders(silos['silo_1'])
-    
+
+    # Create dataloaders for first hospital
+    hospital_1_loaders = data_loader.create_dataloaders(silos['hospital_1'])
+
     # Test dataloader
-    for batch_idx, (data, target) in enumerate(silo_1_loaders['train']):
+    for batch_idx, (data, target) in enumerate(hospital_1_loaders['train']):
         logger.info(f"Batch {batch_idx}: Data shape {data.shape}, Target shape {target.shape}")
         if batch_idx >= 2:  # Only show first few batches
             break
-    
-    logger.info("✅ Data pipeline test completed successfully!")
+
+    logger.info("✅ Diabetes data pipeline test completed successfully!")
 
 if __name__ == "__main__":
     test_data_pipeline()

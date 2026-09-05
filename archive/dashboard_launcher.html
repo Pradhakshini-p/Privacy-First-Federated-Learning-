@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Inclusion-Privacy Balance - Dashboard Launcher</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 3rem;
+            border-radius: 1rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            max-width: 700px;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #ffffff;
+        }
+        .subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 2rem 0;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            padding: 1rem 2rem;
+            text-decoration: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+            min-width: 200px;
+        }
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
+        }
+        .button.secondary {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+        }
+        .button.secondary:hover {
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6);
+        }
+        .info {
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin: 2rem 0;
+            text-align: left;
+        }
+        .feature {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .feature-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #60a5fa;
+        }
+        .status {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+            font-weight: 600;
+        }
+        .status.success {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid #10b981;
+            color: #10b981;
+        }
+        .status.error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid #ef4444;
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤝 The Inclusion-Privacy Balance</h1>
+        <p class="subtitle">Privacy-First Federated Learning Dashboard</p>
+        
+        <div class="features">
+            <div class="feature">
+                <div class="feature-title">🏥 Healthcare Focus</div>
+                <div>Maternal Health Risk Prediction</div>
+            </div>
+            <div class="feature">
+                <div class="feature-title">🌍 Client Diversity</div>
+                <div>4 Healthcare Node Types</div>
+            </div>
+            <div class="feature">
+                <div class="feature-title">💡 Inclusion Insights</div>
+                <div>Real-time Privacy Guidance</div>
+            </div>
+            <div class="feature">
+                <div class="feature-title">🛡️ Privacy Protection</div>
+                <div>Differential Privacy (ε)</div>
+            </div>
+        </div>
+        
+        <div id="status-check">
+            <div class="status">Checking server status...</div>
+        </div>
+        
+        <div class="button-group">
+            <a href="http://localhost:8506" class="button" id="port8506">
+                🚀 Dashboard (Port 8506)
+            </a>
+            <a href="http://localhost:8505" class="button secondary" id="port8505">
+                🔄 Dashboard (Port 8505)
+            </a>
+            <a href="http://localhost:8504" class="button secondary" id="port8504">
+                🔄 Dashboard (Port 8504)
+            </a>
+            <a href="http://localhost:8502" class="button secondary" id="port8502">
+                🔄 Dashboard (Port 8502)
+            </a>
+        </div>
+        
+        <div class="info">
+            <p><strong>📝 Instructions:</strong></p>
+            <p>1. Click each dashboard button to check if server is running on that port</p>
+            <p>2. If a button works, bookmark that URL for future access</p>
+            <p><strong>🔧 To start server:</strong> Double-click <code>start_dashboard.bat</code></p>
+            <p><strong>🏆 Hackathon Project:</strong> Privacy-First Federated Learning for Equitable Digital Transformation</p>
+        </div>
+    </div>
+
+    <script>
+        // Check multiple ports for running server
+        const ports = [8506, 8505, 8504, 8502];
+        const statusDiv = document.getElementById('status-check');
+        
+        async function checkPorts() {
+            let workingPort = null;
+            
+            for (let port of ports) {
+                try {
+                    const response = await fetch(`http://localhost:${port}`);
+                    if (response.ok) {
+                        workingPort = port;
+                        break;
+                    }
+                } catch (error) {
+                    // Port not working, continue checking
+                }
+            }
+            
+            if (workingPort) {
+                statusDiv.innerHTML = `<div class="status success">✅ Server found on port ${workingPort}!</div>`;
+                // Highlight the working button
+                document.getElementById(`port${workingPort}`).style.border = '3px solid #10b981';
+                document.getElementById(`port${workingPort}`).style.transform = 'scale(1.05)';
+            } else {
+                statusDiv.innerHTML = `<div class="status error">⚠️ No server found. Please start the server first.</div>`;
+            }
+        }
+        
+        // Check ports when page loads
+        checkPorts();
+        
+        // Add click handlers to buttons
+        document.querySelectorAll('.button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const href = e.target.getAttribute('href');
+                window.open(href, '_blank');
+            });
+        });
+    </script>
+</body>
+</html>
