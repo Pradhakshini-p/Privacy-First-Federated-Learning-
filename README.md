@@ -1,8 +1,11 @@
 # Privacy-First Federated Learning Pipeline
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-GitHub_Pages-2ea44f?style=for-the-badge&logo=github)](https://pradhakshini-p.github.io/Privacy-First-Federated-Learning-/)
 [![CI](https://github.com/Pradhakshini-p/Privacy-First-Federated-Learning-/actions/workflows/ci.yml/badge.svg)](https://github.com/Pradhakshini-p/Privacy-First-Federated-Learning-/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+> **Live portfolio:** https://pradhakshini-p.github.io/Privacy-First-Federated-Learning-/
 
 Production-ready **federated learning** system for diabetes prediction with **differential privacy**, multi-hospital training, centralized baseline comparison, and a REST inference API.
 
