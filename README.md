@@ -174,5 +174,8 @@ MIT — see [LICENSE](LICENSE).
 
 ## Links
 
+- **Live portfolio site:** https://pradhakshini-p.github.io/Privacy-First-Federated-Learning-/
 - **Repository**: [github.com/Pradhakshini-p/Privacy-First-Federated-Learning-](https://github.com/Pradhakshini-p/Privacy-First-Federated-Learning-)
+- **CI / Deploy**: [GitHub Actions](https://github.com/Pradhakshini-p/Privacy-First-Federated-Learning-/actions)
+- **Docker image**: `ghcr.io/pradhakshini-p/privacy-first-federated-learning-:latest`
 - **Issues**: [GitHub Issues](https://github.com/Pradhakshini-p/Privacy-First-Federated-Learning-/issues)
