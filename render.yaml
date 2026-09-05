@@ -1,0 +1,16 @@
+# Render.com one-click deploy for inference API
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: privacy-fl-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && python train_centralized.py --epochs 10
+    startCommand: python api.py --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.10.0"
+      - key: PYTHONUNBUFFERED
+        value: "1"

@@ -125,8 +125,21 @@ See [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) for details.
 ## Docker
 
 ```bash
+# Local
 docker compose up server client1 client2 client3
+
+# Pull pre-built image from GitHub Container Registry
+docker pull ghcr.io/pradhakshini-p/privacy-first-federated-learning-:latest
+docker run -p 5000:5000 ghcr.io/pradhakshini-p/privacy-first-federated-learning-:latest python api.py
 ```
+
+### Cloud Deploy (Render)
+
+1. Fork or connect this repo on [Render](https://render.com)
+2. Use the included `render.yaml` blueprint, or create a **Web Service**:
+   - **Build:** `pip install -r requirements.txt && python train_centralized.py --epochs 10`
+   - **Start:** `python api.py --host 0.0.0.0 --port $PORT`
+3. Health check path: `/health`
 
 See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for production deployment.
 

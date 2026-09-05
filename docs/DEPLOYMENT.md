@@ -42,8 +42,7 @@ docker compose up api
 
 GitHub Actions runs on push/PR:
 
-- Smoke tests (`pytest tests/`)
-- Data pipeline validation
-- Centralized training smoke test (2 epochs)
+- **CI** (`.github/workflows/ci.yml`): smoke tests + training validation
+- **Deploy** (`.github/workflows/deploy.yml`): Docker image → GitHub Container Registry + release artifacts
 
-See `.github/workflows/ci.yml`.
+See `.github/workflows/` for details.

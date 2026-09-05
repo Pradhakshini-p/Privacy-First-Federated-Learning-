@@ -1,0 +1,97 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+
+      - name: Install and test
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+          pytest tests/ -v --tb=short
+          python train_centralized.py --epochs 2
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  release-artifacts:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+
+      - name: Train demo models for release bundle
+        run: |
+          pip install -r requirements.txt
+          python train_centralized.py --epochs 5
+
+      - name: Create deployment bundle
+        run: |
+          mkdir -p release-bundle
+          cp -r launch.py server.py client.py train_centralized.py evaluate.py api.py predict.py requirements.txt release-bundle/
+          cp -r src data docs DEMO_GUIDE.md README.md release-bundle/
+          mkdir -p release-bundle/models release-bundle/results
+          cp models/centralized_model.pth release-bundle/models/ 2>/dev/null || true
+          cd release-bundle && zip -r ../privacy-fl-pipeline.zip .
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: privacy-fl-pipeline
+          path: privacy-fl-pipeline.zip
+          retention-days: 90
